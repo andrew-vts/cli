@@ -1,14 +1,12 @@
-import {Command, flags} from '@oclif/command'
+import {Command, flags} from '@heroku-cli/command'
 
 export default class WebhooksIndex extends Command {
   static description = 'describe the command here'
 
   static flags = {
-    help: flags.help({char: 'h'}),
-    // flag with a value (-n, --name=VALUE)
-    name: flags.string({char: 'n', description: 'name to print'}),
-    // flag with no value (-f, --force)
-    force: flags.boolean({char: 'f'}),
+    app: flags.app(),
+    remote: flags.remote(),
+    pipeline: flags.string({ char: 'p', description: 'pipeline on which to list', hidden: true })
   }
 
   static args = [{name: 'file'}]
