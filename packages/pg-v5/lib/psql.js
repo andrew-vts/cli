@@ -14,12 +14,13 @@ function handlePsqlError (reject, psql) {
   })
 }
 
-function execPsql (query, dbEnv) {
+function execPsql (query, dbEnv, psqlArgs = []) {
   const { spawn } = require('child_process')
   return new Promise((resolve, reject) => {
     let result = ''
+    psqlArgs = psqlArgs.concat(['-c', query])
     debug('Running query: %s', query.trim())
-    let psql = spawn('psql', ['-c', query], { env: dbEnv, encoding: 'utf8', stdio: [ 'ignore', 'pipe', 'inherit' ] })
+    let psql = spawn('psql', psqlArgs, { env: dbEnv, encoding: 'utf8', stdio: [ 'ignore', 'pipe', 'inherit' ] })
     psql.stdout.on('data', function (data) {
       result += data.toString()
     })
@@ -30,12 +31,13 @@ function execPsql (query, dbEnv) {
   })
 }
 
-function execPsqlWithFile (file, dbEnv) {
+function execPsqlWithFile (file, dbEnv, psqlArgs = []) {
   const { spawn } = require('child_process')
   return new Promise((resolve, reject) => {
     let result = ''
+    psqlArgs = psqlArgs.concat(['-f', file])
     debug('Running sql file: %s', file.trim())
-    let psql = spawn('psql', ['-f', file], { env: dbEnv, encoding: 'utf8', stdio: [ 'ignore', 'pipe', 'inherit' ] })
+    let psql = spawn('psql', psqlArgs, { env: dbEnv, encoding: 'utf8', stdio: [ 'ignore', 'pipe', 'inherit' ] })
     psql.stdout.on('data', function (data) {
       result += data.toString()
     })
@@ -46,10 +48,10 @@ function execPsqlWithFile (file, dbEnv) {
   })
 }
 
-function psqlInteractive (dbEnv, prompt) {
+function psqlInteractive (dbEnv, prompt, psqlArgs = []) {
   const { spawn } = require('child_process')
   return new Promise((resolve, reject) => {
-    let psqlArgs = ['--set', `PROMPT1=${prompt}`, '--set', `PROMPT2=${prompt}`]
+    psqlArgs = psqlArgs.concat(['--set', `PROMPT1=${prompt}`, '--set', `PROMPT2=${prompt}`])
     let psqlHistoryPath = process.env.HEROKU_PSQL_HISTORY
     if (psqlHistoryPath) {
       const fs = require('fs')
@@ -80,12 +82,12 @@ function handleSignals () {
   process.on('SIGINT', () => {})
 }
 
-function * exec (db, query) {
+function * exec (db, query, psqlArgs = []) {
   handleSignals()
   let configs = bastion.getConfigs(db)
 
   yield bastion.sshTunnel(db, configs.dbTunnelConfig)
-  return yield execPsql(query, configs.dbEnv)
+  return yield execPsql(query, configs.dbEnv, psqlArgs)
 }
 
 async function execFile (db, file) {

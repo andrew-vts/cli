@@ -11,6 +11,7 @@ function * run (context, heroku) {
 
   let namespace = flags.credential ? `credential:${flags.credential}` : null
   let db
+  let psqlArgs = []
   try {
     db = yield fetcher.database(app, args.database, namespace)
   } catch (err) {
@@ -20,12 +21,15 @@ function * run (context, heroku) {
     throw err
   }
   cli.console.error(`--> Connecting to ${cli.color.addon(db.attachment.addon.name)}`)
+  if (flags.quiet) { psqlArgs.push('--quiet') }
+  if (flags['no-psqlrc']) { psqlArgs.push('--no-psqlrc') }
+  if (flags['field-separator-zero']) { psqlArgs.push('--field-separator-zero') }
   if (flags.command) {
-    process.stdout.write(yield psql.exec(db, flags.command))
+    process.stdout.write(yield psql.exec(db, flags.command, psqlArgs))
   } else if (flags.file) {
-    process.stdout.write(yield psql.execFile(db, flags.file))
+    process.stdout.write(yield psql.execFile(db, flags.file, psqlArgs))
   } else {
-    yield psql.interactive(db)
+    yield psql.interactive(db, undefined, psqlArgs)
   }
 }
 
@@ -36,6 +40,9 @@ let cmd = {
   flags: [
     { name: 'command', char: 'c', description: 'SQL command to run', hasValue: true },
     { name: 'file', char: 'f', description: 'SQL file to run', hasValue: true },
+    { name: 'quiet', char: 'q', description: "pass --quiet to psql", hasValue: false },
+    { name: 'no-psqlrc', char: 'X', description: "pass --no-psqlrc to psql", hasValue: false },
+    { name: 'field-separator-zero', char: 'z', description: "pass --field-separator-zero to psql", hasValue: false },
     { name: 'credential', description: 'credential to use', hasValue: true }
   ],
   args: [{ name: 'database', optional: true }],
